@@ -103,7 +103,9 @@ let
       ln -s ${kernelPath} $out/kernel
       ln -s ${config.system.modulesTree} $out/kernel-modules
 
-      ln -s ${config.system.build.initialRamdisk}/initrd $out/initrd
+      ${if config.boot.initrd.enable then
+        "ln -s ${config.system.build.initialRamdisk}/initrd $out/initrd"
+        else ""}
 
       echo "$activationScript" > $out/activate
       substituteInPlace $out/activate --subst-var out

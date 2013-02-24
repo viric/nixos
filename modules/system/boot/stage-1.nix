@@ -22,6 +22,13 @@ let
       ";
     };
 
+    boot.initrd.enable = mkOption {
+      default = true;
+      description = "
+        Whether to create and use an initrd to boot.
+      ";
+    };
+
     boot.initrd.enableSplashScreen = mkOption {
       default = true;
       description = "
@@ -354,9 +361,11 @@ in {
 
   require = [options];
 
-  system.build.bootStage1 = bootStage1;
-  system.build.initialRamdisk = initialRamdisk;
-  system.build.extraUtils = extraUtils;
+  system.build = mkIf config.boot.initrd.enable {
+    bootStage1 = bootStage1;
+    initialRamdisk = initialRamdisk;
+    extraUtils = extraUtils;
+  };
 
   system.requiredKernelConfig = with config.lib.kernelConfig; [
     (isYes "TMPFS")
