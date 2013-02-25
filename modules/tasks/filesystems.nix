@@ -71,6 +71,8 @@ let
 
   };
 
+  rootFS = head (filter (fs: fs.mountPoint == "/") fileSystems);
+
 in
 
 {
@@ -137,6 +139,10 @@ in
   config = {
 
     boot.supportedFilesystems = map (fs: fs.fsType) fileSystems;
+
+    # The kernel can only mount a rootfs by device
+    boot.kernelParams = pkgs.lib.optional (!config.boot.initrd.enable)
+      "root=${rootFS.device}";
 
     boot.initrd.supportedFilesystems =
       map (fs: fs.fsType)

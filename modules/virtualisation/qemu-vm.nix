@@ -181,7 +181,8 @@ let
           '' else ''
             -drive file=$NIX_DISK_IMAGE,if=virtio,cache=writeback,werror=report \
             -kernel ${config.system.build.toplevel}/kernel \
-            -initrd ${config.system.build.toplevel}/initrd \
+            ${if config.boot.initrd.enable then
+              "-initrd ${config.system.build.toplevel}/initrd" else ""} \
             -append "$(cat ${config.system.build.toplevel}/kernel-params) init=${config.system.build.toplevel}/init regInfo=${regInfo} ${kernelConsole} $QEMU_KERNEL_PARAMS" \
           ''} \
           ${qemuGraphics} \
