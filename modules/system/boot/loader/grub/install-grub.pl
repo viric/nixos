@@ -152,10 +152,10 @@ sub copyToKernelsDir {
 
 sub addEntry {
     my ($name, $path) = @_;
-    return unless -e "$path/kernel" && -e "$path/initrd";
+    return unless -e "$path/kernel";
 
     my $kernel = copyToKernelsDir(Cwd::abs_path("$path/kernel"));
-    my $initrd = copyToKernelsDir(Cwd::abs_path("$path/initrd"));
+    my $initrd = -e "$path/initrd" ? copyToKernelsDir(Cwd::abs_path("$path/initrd")) : undef;
     my $xen = -e "$path/xen.gz" ? copyToKernelsDir(Cwd::abs_path("$path/xen.gz")) : undef;
 
     # FIXME: $confName
@@ -171,13 +171,13 @@ sub addEntry {
         $conf .= "  $extraPerEntryConfig\n" if $extraPerEntryConfig;
         $conf .= "  kernel $xen $xenParams\n" if $xen;
         $conf .= "  " . ($xen ? "module" : "kernel") . " $kernel $kernelParams\n";
-        $conf .= "  " . ($xen ? "module" : "initrd") . " $initrd\n\n";
+        $conf .= $initrd ? "  " . ($xen ? "module" : "initrd") . " $initrd\n\n" : "";
     } else {
         $conf .= "menuentry \"$name\" {\n";
         $conf .= "  $extraPerEntryConfig\n" if $extraPerEntryConfig;
         $conf .= "  multiboot $xen $xenParams\n" if $xen;
         $conf .= "  " . ($xen ? "module" : "linux") . " $kernel $kernelParams\n";
-        $conf .= "  " . ($xen ? "module" : "initrd") . " $initrd\n";
+        $conf .= $initrd ? "  " . ($xen ? "module" : "initrd") . " $initrd\n" : "";
         $conf .= "}\n\n";
     }
 }
