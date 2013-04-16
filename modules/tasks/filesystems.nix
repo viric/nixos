@@ -7,6 +7,11 @@ let
 
   fileSystems = attrValues config.fileSystems;
 
+  hasMultiDevices = fs: fs.devices != null;
+  hasNotMultiDevices = fs: fs.devices == null;
+  fileSystemsOneDevice = (filter hasNotMultiDevices fileSystems);
+  fileSystemsMultiDevice = (filter hasMultiDevices fileSystems);
+
   fileSystemOpts = { name, ... }: {
 
     options = {
@@ -22,6 +27,13 @@ let
         example = "/dev/sda";
         type = types.uniq (types.nullOr types.string);
         description = "Location of the device.";
+      };
+
+      devices = mkOption {
+        default = null;
+        example = [ "/dev/sda" "/dev/sdb" ];
+        type = types.uniq (types.nullOr (types.listOf types.string));
+        description = "Location of the devices to depend on.";
       };
 
       label = mkOption {
@@ -154,7 +166,7 @@ in
         # This is a generated file.  Do not edit!
 
         # Filesystems.
-        ${flip concatMapStrings fileSystems (fs:
+        ${flip concatMapStrings fileSystemsOneDevice (fs:
             (if fs.device != null then fs.device else "/dev/disk/by-label/${fs.label}")
             + " " + fs.mountPoint
             + " " + fs.fsType
@@ -176,6 +188,25 @@ in
       { description = "All File Systems";
         wants = [ "local-fs.target" "remote-fs.target" ];
       };
+
+    systemd.mounts =
+      let
+        mountUnit = fs:
+          let
+            mountPoint' = escapeSystemdPath fs.mountPoint;
+            devicesString = concatStringsSep "," (map (p: escapeSystemdPath p) fs.devices);
+          in
+          { description = "Mount of ${devicesString}";
+	    what = head fs.devices;
+            after = [ "systemd-udev-settle.service" ];
+            before = [ "local-fs.target" ];
+            wantedBy = [ "local-fs.target" ];
+            requires = map (p: (escapeSystemdPath p) + ".device") fs.devices;
+            where = fs.mountPoint;
+            type = fs.fsType;
+            options = fs.options;
+          };
+      in map mountUnit fileSystemsMultiDevice;
 
     # Emit systemd services to format requested filesystems.
     systemd.services =
